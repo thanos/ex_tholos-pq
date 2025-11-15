@@ -287,16 +287,13 @@ Base.encode16(public_key)
 
 ## Next Steps
 
-- 📖 Read the [README.md](README.md) for detailed documentation
-- 🔧 Check [SETUP.md](SETUP.md) for development setup
-- 🚀 See [PROJECT_OVERVIEW.md](PROJECT_OVERVIEW.md) for architecture details
-- 🤝 Read [CONTRIBUTING.md](CONTRIBUTING.md) to contribute
+- Read the [README.md](README.md) for detailed documentation
 
 ## Need Help?
 
-- 📝 [Open an issue](https://github.com/yourusername/ex_tholos-pq/issues)
-- 💬 [Start a discussion](https://github.com/yourusername/ex_tholos-pq/discussions)
-- 📧 Email: your.email@example.com
+- [Open an issue](https://github.com/yourusername/ex_tholos-pq/issues)
+- [Start a discussion](https://github.com/yourusername/ex_tholos-pq/discussions)
+- Email: your.email@example.com
 
 Happy coding! 🎉
 
