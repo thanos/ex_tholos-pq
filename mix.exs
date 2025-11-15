@@ -31,7 +31,9 @@ defmodule ExTholosPq.MixProject do
       {:rustler, "~> 0.37.1", runtime: false},
       {:ex_doc, "~> 0.31", only: :dev, runtime: false},
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
-      {:sobelow, "~> 0.14", only: [:dev, :test], runtime: false, warn_if_outdated: true}
+      {:sobelow, "~> 0.14", only: [:dev, :test], runtime: false, warn_if_outdated: true},
+      {:stream_data, "~> 1.2.0", only: :test},
+      {:excoveralls, "~> 0.18", only: :test}
     ]
   end
 
