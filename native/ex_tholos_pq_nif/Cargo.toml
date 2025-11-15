@@ -2,7 +2,7 @@
 name = "ex_tholos_pq_nif"
 version = "0.1.0"
 edition = "2021"
-authors = ["Your Name <your.email@example.com>"]
+authors = ["Thanos Vassilakis <thanosv@gmail.com>"]
 license = "Apache-2.0"
 description = "Rustler NIF for tholos-pq post-quantum cryptography"
 
