@@ -62,10 +62,6 @@ defmodule ExTholosPq.MixProject do
       extras: [
         "README.md",
         "QUICKSTART.md",
-        "SETUP.md",
-        "PUBLISHING.md",
-        "PROJECT_OVERVIEW.md",
-        "CONTRIBUTING.md",
         "CHANGELOG.md"
       ],
       source_ref: "v#{@version}",
