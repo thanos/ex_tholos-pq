@@ -295,5 +295,4 @@ Base.encode16(public_key)
 - [Start a discussion](https://github.com/yourusername/ex_tholos-pq/discussions)
 - Email: your.email@example.com
 
-Happy coding! 🎉
 
