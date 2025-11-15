@@ -1,0 +1,22 @@
+[package]
+name = "ex_tholos_pq_nif"
+version = "0.1.0"
+edition = "2021"
+authors = ["Your Name <your.email@example.com>"]
+license = "Apache-2.0"
+description = "Rustler NIF for tholos-pq post-quantum cryptography"
+
+[lib]
+name = "ex_tholos_pq_nif"
+crate-type = ["cdylib"]
+
+[dependencies]
+rustler = "0.34.0"
+tholos-pq = "0.1"
+serde_cbor = "0.11"
+lazy_static = "1.4"
+
+[profile.release]
+lto = true
+opt-level = 3
+
