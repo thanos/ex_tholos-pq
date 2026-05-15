@@ -8,7 +8,7 @@ defmodule ExTholosPq.MixProject do
     [
       app: :ex_tholos_pq,
       version: @version,
-      elixir: "~> 1.14",
+      elixir: "~> 1.18",
       start_permanent: Mix.env() == :prod,
       deps: deps(),
       description: description(),
