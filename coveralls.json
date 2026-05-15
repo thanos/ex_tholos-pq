@@ -3,5 +3,5 @@
     "minimum_coverage": 0,
     "treat_no_relevant_lines_as_covered": true
   },
-  "skip_files": ["lib/ex_tholos_pq/native.ex"]
+  "skip_files": []
 }
