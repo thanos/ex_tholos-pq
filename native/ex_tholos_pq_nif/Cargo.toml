@@ -14,7 +14,10 @@ crate-type = ["cdylib"]
 # NIF version must map to rustler's feature flags. See:
 # https://hexdocs.pm/rustler_precompiled/precompilation_guide.html#additional-configuration-before-build
 [features]
-default = ["nif_version_2_17"]
+# Default must be the *lowest* NIF you ship; the release matrix enables higher
+# versions with `--features nif_version_2_17`. If default were 2.17, 2.16
+# builds would still activate 2.17 and fail the rustler-precompiled check.
+default = ["nif_version_2_16"]
 nif_version_2_16 = ["rustler/nif_version_2_16"]
 nif_version_2_17 = ["rustler/nif_version_2_17"]
 
