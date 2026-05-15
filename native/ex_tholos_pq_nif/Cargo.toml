@@ -10,8 +10,16 @@ description = "Rustler NIF for tholos-pq post-quantum cryptography"
 name = "ex_tholos_pq_nif"
 crate-type = ["cdylib"]
 
+# Required for rustler_precompiled / philss/rustler-precompiled-action: each matrix
+# NIF version must map to rustler's feature flags. See:
+# https://hexdocs.pm/rustler_precompiled/precompilation_guide.html#additional-configuration-before-build
+[features]
+default = ["nif_version_2_17"]
+nif_version_2_16 = ["rustler/nif_version_2_16"]
+nif_version_2_17 = ["rustler/nif_version_2_17"]
+
 [dependencies]
-rustler = "0.37"
+rustler = { version = "0.37", default-features = false, features = ["derive"] }
 tholos-pq = "0.1"
 serde_cbor = "0.11"
 lazy_static = "1.4"
