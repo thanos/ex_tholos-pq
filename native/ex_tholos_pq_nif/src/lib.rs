@@ -19,8 +19,8 @@ lazy_static::lazy_static! {
         Mutex::new(HashMap::new());
 }
 
-// Initialize the NIF module
-rustler::init!("Elixir.ExTholosPq");
+// Initialize the NIF module (must match `ExTholosPq.Native` in Elixir)
+rustler::init!("Elixir.ExTholosPq.Native");
 
 /// Generate a new recipient keypair and store it
 /// Returns {ok, {kid, public_key_cbor}}

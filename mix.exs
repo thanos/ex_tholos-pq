@@ -86,7 +86,7 @@ defmodule ExTholosPq.MixProject do
         native
       ])
 
-    checksum = "checksum-Elixir.ExTholosPq.exs"
+    checksum = "checksum-Elixir.ExTholosPq.Native.exs"
 
     if File.exists?(checksum) do
       base ++ [checksum]
@@ -108,6 +108,9 @@ defmodule ExTholosPq.MixProject do
       groups_for_modules: [
         API: [
           ExTholosPq
+        ],
+        Internals: [
+          ExTholosPq.Native
         ]
       ],
       nest_modules_by_prefix: [ExTholosPq]

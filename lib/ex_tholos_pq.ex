@@ -49,32 +49,7 @@ defmodule ExTholosPq do
   ```
   """
 
-  version = Mix.Project.config()[:version]
-
-  checksum_path =
-    __DIR__
-    |> Path.join("../checksum-Elixir.ExTholosPq.exs")
-    |> Path.expand()
-
-  checksum_missing? = not File.exists?(checksum_path)
-
-  use RustlerPrecompiled,
-    otp_app: :ex_tholos_pq,
-    crate: "ex_tholos_pq_nif",
-    base_url: "https://github.com/thanos/ex_tholos-pq/releases/download/v#{version}",
-    version: version,
-    nif_versions: ["2.16", "2.17"],
-    targets: [
-      "aarch64-apple-darwin",
-      "x86_64-apple-darwin",
-      "x86_64-unknown-linux-gnu",
-      "x86_64-unknown-linux-musl",
-      "aarch64-unknown-linux-gnu",
-      "aarch64-unknown-linux-musl",
-      "x86_64-pc-windows-msvc",
-      "aarch64-pc-windows-msvc"
-    ],
-    force_build: System.get_env("EX_THOLOS_PQ_BUILD") in ["1", "true"] or checksum_missing?
+  alias ExTholosPq.Native
 
   @doc """
   Generates a new recipient keypair for post-quantum encryption.
@@ -98,7 +73,7 @@ defmodule ExTholosPq do
 
   """
   @spec gen_recipient_keypair(String.t()) :: {:ok, {String.t(), binary()}} | {:error, String.t()}
-  def gen_recipient_keypair(_kid), do: :erlang.nif_error(:nif_not_loaded)
+  def gen_recipient_keypair(kid), do: Native.gen_recipient_keypair(kid)
 
   @doc """
   Generates a new sender keypair for signing encrypted messages.
@@ -122,7 +97,7 @@ defmodule ExTholosPq do
 
   """
   @spec gen_sender_keypair(String.t()) :: {:ok, {String.t(), binary()}} | {:error, String.t()}
-  def gen_sender_keypair(_sid), do: :erlang.nif_error(:nif_not_loaded)
+  def gen_sender_keypair(sid), do: Native.gen_sender_keypair(sid)
 
   @doc """
   Encrypts a message for multiple recipients with sender authentication.
@@ -152,7 +127,8 @@ defmodule ExTholosPq do
   """
   @spec encrypt(binary(), String.t(), list(binary())) ::
           {:ok, binary()} | {:error, String.t()}
-  def encrypt(_message, _sender_id, _recipient_pub_keys), do: :erlang.nif_error(:nif_not_loaded)
+  def encrypt(message, sender_id, recipient_pub_keys),
+    do: Native.encrypt(message, sender_id, recipient_pub_keys)
 
   @doc """
   Decrypts a message for a specific recipient.
@@ -180,6 +156,6 @@ defmodule ExTholosPq do
   """
   @spec decrypt(binary(), String.t(), list(binary())) ::
           {:ok, binary()} | {:error, String.t()}
-  def decrypt(_ciphertext, _kid, _allowed_sender_pub_keys),
-    do: :erlang.nif_error(:nif_not_loaded)
+  def decrypt(ciphertext, kid, allowed_sender_pub_keys),
+    do: Native.decrypt(ciphertext, kid, allowed_sender_pub_keys)
 end
