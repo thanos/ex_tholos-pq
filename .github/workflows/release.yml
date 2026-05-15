@@ -27,7 +27,7 @@ jobs:
           # aarch64 Windows: must use ARM64 runners; cross-compiling MSVC ARM from
           # x86_64 hosts breaks for pq-crypto C deps. See:
           # https://github.blog/changelog/2025-04-14-windows-arm64-hosted-runners-now-available-in-public-preview/
-          # - { target: aarch64-pc-windows-msvc, os: windows-11-arm }
+          - { target: aarch64-pc-windows-msvc, os: windows-11-arm }
 
     steps:
       - uses: actions/checkout@v4
@@ -104,7 +104,7 @@ jobs:
           files: nifs/*.tar.gz
           generate_release_notes: true
 
-  publish_hex:
+  # publish_hex:
     name: Publish to Hex.pm
     needs: release
     runs-on: ubuntu-latest
