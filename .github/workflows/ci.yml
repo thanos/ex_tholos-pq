@@ -114,14 +114,6 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - elixir: "1.14"
-            otp: "25"
-          - elixir: "1.15"
-            otp: "26"
-          - elixir: "1.16"
-            otp: "26"
-          - elixir: "1.17"
-            otp: "27"
           - elixir: "1.18"
             otp: "27"
           - elixir: "1.18"
@@ -129,6 +121,12 @@ jobs:
           - elixir: "1.19"
             otp: "28"
             coverage: true
+          - elixir: "1.20.0-rc.1"
+            otp: "28"
+            experimental: true
+          - elixir: "1.20.0-rc.1"
+            otp: "29.0-rc1"
+            experimental: true
     steps:
       - uses: actions/checkout@v4
 
