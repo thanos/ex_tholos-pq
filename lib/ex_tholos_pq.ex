@@ -49,9 +49,32 @@ defmodule ExTholosPq do
   ```
   """
 
-  use Rustler,
+  version = Mix.Project.config()[:version]
+
+  checksum_path =
+    __DIR__
+    |> Path.join("../checksum-Elixir.ExTholosPq.exs")
+    |> Path.expand()
+
+  checksum_missing? = not File.exists?(checksum_path)
+
+  use RustlerPrecompiled,
     otp_app: :ex_tholos_pq,
-    crate: :ex_tholos_pq_nif
+    crate: "ex_tholos_pq_nif",
+    base_url: "https://github.com/thanos/ex_tholos-pq/releases/download/v#{version}",
+    version: version,
+    nif_versions: ["2.16", "2.17"],
+    targets: [
+      "aarch64-apple-darwin",
+      "x86_64-apple-darwin",
+      "x86_64-unknown-linux-gnu",
+      "x86_64-unknown-linux-musl",
+      "aarch64-unknown-linux-gnu",
+      "aarch64-unknown-linux-musl",
+      "x86_64-pc-windows-msvc",
+      "aarch64-pc-windows-msvc"
+    ],
+    force_build: System.get_env("EX_THOLOS_PQ_BUILD") in ["1", "true"] or checksum_missing?
 
   @doc """
   Generates a new recipient keypair for post-quantum encryption.

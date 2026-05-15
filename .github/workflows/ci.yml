@@ -1,0 +1,178 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+env:
+  MIX_ENV: test
+  EX_THOLOS_PQ_BUILD: "true"
+
+jobs:
+  lint:
+    name: Format & Credo
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: erlef/setup-beam@v1
+        with:
+          elixir-version: "1.19"
+          otp-version: "28"
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache deps
+        uses: actions/cache@v4
+        with:
+          path: deps
+          key: deps-${{ hashFiles('mix.lock') }}
+
+      - name: Cache build
+        uses: actions/cache@v4
+        with:
+          path: _build
+          key: build-test-lint-${{ hashFiles('mix.lock') }}
+          restore-keys: build-test-lint-
+
+      - name: Cache Rust target
+        uses: actions/cache@v4
+        with:
+          path: native/ex_tholos_pq_nif/target
+          key: rust-target-lint-${{ hashFiles('native/ex_tholos_pq_nif/Cargo.lock') }}
+          restore-keys: rust-target-lint-
+
+      - run: mix deps.get
+
+      - run: mix format --check-formatted
+
+      - name: cargo fmt
+        run: cargo fmt --manifest-path native/ex_tholos_pq_nif/Cargo.toml -- --check
+
+      - run: mix credo
+
+  compile:
+    name: Compile (Elixir ${{ matrix.elixir }} / OTP ${{ matrix.otp }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - elixir: "1.14"
+            otp: "25"
+          - elixir: "1.15"
+            otp: "26"
+          - elixir: "1.16"
+            otp: "26"
+          - elixir: "1.17"
+            otp: "27"
+          - elixir: "1.18"
+            otp: "27"
+          - elixir: "1.18"
+            otp: "28"
+          - elixir: "1.19"
+            otp: "28"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: erlef/setup-beam@v1
+        with:
+          elixir-version: ${{ matrix.elixir }}
+          otp-version: ${{ matrix.otp }}
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache deps
+        uses: actions/cache@v4
+        with:
+          path: deps
+          key: deps-${{ hashFiles('mix.lock') }}
+
+      - name: Cache build
+        uses: actions/cache@v4
+        with:
+          path: _build
+          key: build-compile-${{ matrix.elixir }}-${{ matrix.otp }}-${{ hashFiles('mix.lock') }}
+          restore-keys: build-compile-${{ matrix.elixir }}-${{ matrix.otp }}-
+
+      - name: Cache Rust target
+        uses: actions/cache@v4
+        with:
+          path: native/ex_tholos_pq_nif/target
+          key: rust-target-compile-${{ matrix.elixir }}-${{ matrix.otp }}-${{ hashFiles('native/ex_tholos_pq_nif/Cargo.lock') }}
+          restore-keys: rust-target-compile-${{ matrix.elixir }}-${{ matrix.otp }}-
+
+      - run: mix deps.get
+
+      - run: mix compile --warnings-as-errors
+
+  test:
+    name: Test (Elixir ${{ matrix.elixir }} / OTP ${{ matrix.otp }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - elixir: "1.14"
+            otp: "25"
+          - elixir: "1.15"
+            otp: "26"
+          - elixir: "1.16"
+            otp: "26"
+          - elixir: "1.17"
+            otp: "27"
+          - elixir: "1.18"
+            otp: "27"
+          - elixir: "1.18"
+            otp: "28"
+          - elixir: "1.19"
+            otp: "28"
+            coverage: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: erlef/setup-beam@v1
+        with:
+          elixir-version: ${{ matrix.elixir }}
+          otp-version: ${{ matrix.otp }}
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache deps
+        uses: actions/cache@v4
+        with:
+          path: deps
+          key: deps-${{ hashFiles('mix.lock') }}
+
+      - name: Cache build
+        uses: actions/cache@v4
+        with:
+          path: _build
+          key: build-test-${{ matrix.elixir }}-${{ matrix.otp }}-${{ hashFiles('mix.lock') }}
+          restore-keys: build-test-${{ matrix.elixir }}-${{ matrix.otp }}-
+
+      - name: Cache Rust target
+        uses: actions/cache@v4
+        with:
+          path: native/ex_tholos_pq_nif/target
+          key: rust-target-test-${{ matrix.elixir }}-${{ matrix.otp }}-${{ hashFiles('native/ex_tholos_pq_nif/Cargo.lock') }}
+          restore-keys: rust-target-test-${{ matrix.elixir }}-${{ matrix.otp }}-
+
+      - run: mix deps.get
+
+      - name: Run tests
+        if: ${{ !matrix.coverage }}
+        run: mix test
+
+      - name: Run tests with coverage
+        if: ${{ matrix.coverage }}
+        run: mix coveralls.lcov
+
+      - name: Upload coverage to Coveralls
+        if: ${{ matrix.coverage }}
+        uses: coverallsapp/github-action@v2
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path-to-lcov: cover/lcov.info
