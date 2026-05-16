@@ -24,9 +24,8 @@ jobs:
           - { target: aarch64-unknown-linux-gnu, os: ubuntu-22.04, use-cross: true }
           - { target: aarch64-unknown-linux-musl, os: ubuntu-22.04, use-cross: true }
           - { target: x86_64-pc-windows-msvc, os: windows-2022 }
-          # Native ARM64 Windows runner (cross MSVC ARM from x86_64 breaks pq-crypto C deps).
-          # https://github.blog/changelog/2025-04-14-windows-arm64-hosted-runners-now-available-in-public-preview/
-          - { target: aarch64-pc-windows-msvc, os: windows-11-arm }
+          # aarch64-pc-windows-msvc omitted: pqcrypto-dilithium (tholos-pq) uses GCC/asm paths
+          # that do not build on MSVC ARM64 (LNK1181: __asm_NTT.o). Re-enable when upstream supports it.
 
     steps:
       - uses: actions/checkout@v4
@@ -82,7 +81,10 @@ jobs:
     name: Create GitHub Release
     needs: build_release
     runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/')
+    # Publish whatever matrix jobs produced (do not block on optional/failed targets).
+    if: >-
+      always() && !cancelled() &&
+      startsWith(github.ref, 'refs/tags/')
     steps:
       - name: Download all artifacts
         uses: actions/download-artifact@v4

@@ -24,8 +24,7 @@ defmodule ExTholosPq.Native do
       "x86_64-unknown-linux-musl",
       "aarch64-unknown-linux-gnu",
       "aarch64-unknown-linux-musl",
-      "x86_64-pc-windows-msvc",
-      "aarch64-pc-windows-msvc"
+      "x86_64-pc-windows-msvc"
     ],
     force_build: System.get_env("EX_THOLOS_PQ_BUILD") in ["1", "true"] or checksum_missing?
 
