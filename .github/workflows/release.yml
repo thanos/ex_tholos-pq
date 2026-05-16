@@ -17,15 +17,14 @@ jobs:
       matrix:
         nif: ["2.16", "2.17"]
         job:
-
-          # - { target: x86_64-unknown-linux-gnu, os: ubuntu-22.04 }
-          # - { target: x86_64-unknown-linux-musl, os: ubuntu-22.04, use-cross: true }
-          # - { target: aarch64-unknown-linux-gnu, os: ubuntu-22.04, use-cross: true }
-          # - { target: aarch64-unknown-linux-musl, os: ubuntu-22.04, use-cross: true }
-          # x86_64 Windows: standard hosted runner.
+          - { target: aarch64-apple-darwin, os: macos-14 }
+          - { target: x86_64-apple-darwin, os: macos-14 }
+          - { target: x86_64-unknown-linux-gnu, os: ubuntu-22.04 }
+          - { target: x86_64-unknown-linux-musl, os: ubuntu-22.04, use-cross: true }
+          - { target: aarch64-unknown-linux-gnu, os: ubuntu-22.04, use-cross: true }
+          - { target: aarch64-unknown-linux-musl, os: ubuntu-22.04, use-cross: true }
           - { target: x86_64-pc-windows-msvc, os: windows-2022 }
-          # aarch64 Windows: must use ARM64 runners; cross-compiling MSVC ARM from
-          # x86_64 hosts breaks for pq-crypto C deps. See:
+          # Native ARM64 Windows runner (cross MSVC ARM from x86_64 breaks pq-crypto C deps).
           # https://github.blog/changelog/2025-04-14-windows-arm64-hosted-runners-now-available-in-public-preview/
           - { target: aarch64-pc-windows-msvc, os: windows-11-arm }
 
@@ -47,8 +46,7 @@ jobs:
         run: |
           rustup default stable
           rustup target add ${{ matrix.job.target }}
-          - { target: aarch64-apple-darwin, os: macos-14 }
-          - { target: x86_64-apple-darwin, os: macos-14 }
+
       - name: Add Rust target (Windows)
         if: runner.os == 'Windows'
         shell: bash
@@ -104,7 +102,7 @@ jobs:
           files: nifs/*.tar.gz
           generate_release_notes: true
 
-  # publish_hex:
+  publish_hex:
     name: Publish to Hex.pm
     needs: release
     runs-on: ubuntu-latest
