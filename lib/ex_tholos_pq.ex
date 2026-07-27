@@ -1,3 +1,52 @@
+# coveralls-ignore-start
+defmodule ExTholosPq.Native do
+  @moduledoc false
+
+  version = Mix.Project.config()[:version]
+
+  checksum_path =
+    __DIR__
+    |> Path.join("../checksum-Elixir.ExTholosPq.Native.exs")
+    |> Path.expand()
+
+  checksum_missing? = not File.exists?(checksum_path)
+
+  use RustlerPrecompiled,
+    otp_app: :ex_tholos_pq,
+    crate: "ex_tholos_pq_nif",
+    base_url: "https://github.com/thanos/ex_tholos-pq/releases/download/v#{version}",
+    version: version,
+    nif_versions: ["2.16", "2.17"],
+    targets: [
+      "aarch64-apple-darwin",
+      "x86_64-apple-darwin",
+      "x86_64-unknown-linux-gnu",
+      "x86_64-unknown-linux-musl",
+      "aarch64-unknown-linux-gnu",
+      "aarch64-unknown-linux-musl",
+      "x86_64-pc-windows-msvc"
+    ],
+    force_build: System.get_env("EX_THOLOS_PQ_BUILD") in ["1", "true"] or checksum_missing?
+
+  def gen_recipient_keypair(_kid), do: :erlang.nif_error(:nif_not_loaded)
+
+  def gen_sender_keypair(_sid), do: :erlang.nif_error(:nif_not_loaded)
+
+  def encrypt(_message, _sender_id, _recipient_pub_keys), do: :erlang.nif_error(:nif_not_loaded)
+
+  def decrypt(_ciphertext, _kid, _allowed_sender_pub_keys),
+    do: :erlang.nif_error(:nif_not_loaded)
+
+  def export_recipient_secret(_kid), do: :erlang.nif_error(:nif_not_loaded)
+
+  def import_recipient_keypair(_kid, _pub_cbor, _sk_bytes),
+    do: :erlang.nif_error(:nif_not_loaded)
+
+  def import_sender_keypair(_sid, _pk_bytes, _sk_bytes), do: :erlang.nif_error(:nif_not_loaded)
+end
+
+# coveralls-ignore-stop
+
 defmodule ExTholosPq do
   @moduledoc """
   Elixir NIF bindings for tholos-pq, a post-quantum multi-recipient encryption library.
@@ -20,7 +69,7 @@ defmodule ExTholosPq do
   ```elixir
   def deps do
     [
-      {:ex_tholos_pq, "~> 0.1.0"}
+      {:ex_tholos_pq, "~> 0.2.0"}
     ]
   end
   ```
@@ -32,33 +81,23 @@ defmodule ExTholosPq do
   ### Example
 
   ```elixir
-  # Generate recipient keypairs
-  {:ok, {pub_a, priv_a}} = ExTholosPq.gen_recipient_keypair("Alice")
-  {:ok, {pub_b, priv_b}} = ExTholosPq.gen_recipient_keypair("Bob")
+  # Recipient keypairs: `{:ok, {kid, public_key}}`
+  {:ok, {alice_kid, pub_a}} = ExTholosPq.gen_recipient_keypair("Alice")
+  {:ok, {bob_kid, pub_b}} = ExTholosPq.gen_recipient_keypair("Bob")
 
-  # Generate sender keypair
-  {:ok, sender} = ExTholosPq.gen_sender_keypair("Sender1")
+  # Sender: `{:ok, {sender_id, sender_public}}`
+  {:ok, {sender_id, sender_pub}} = ExTholosPq.gen_sender_keypair("Sender1")
 
-  # Encrypt message for multiple recipients
   message = "Hello, post-quantum world!"
-  {:ok, ciphertext} = ExTholosPq.encrypt(message, sender, [pub_a, pub_b])
+  {:ok, ciphertext} = ExTholosPq.encrypt(message, sender_id, [pub_a, pub_b])
 
-  # Each recipient can decrypt
-  {:ok, plaintext_a} = ExTholosPq.decrypt(ciphertext, "Alice", priv_a, [])
-  {:ok, plaintext_b} = ExTholosPq.decrypt(ciphertext, "Bob", priv_b, [])
+  # Decrypt with recipient `kid` and allowed sender public keys
+  {:ok, plaintext_a} = ExTholosPq.decrypt(ciphertext, alice_kid, [sender_pub])
+  {:ok, plaintext_b} = ExTholosPq.decrypt(ciphertext, bob_kid, [sender_pub])
   ```
   """
 
-  version = Mix.Project.config()[:version]
-
-  use RustlerPrecompiled,
-    otp_app: :ex_tholos_pq,
-    crate: "ex_tholos_pq_nif",
-    base_url: "https://github.com/thanos/ex_tholos-pq/releases/download/v#{version}",
-    force_build:
-      System.get_env("EX_THOLOS_PQ_BUILD") in ["1", "true"] or
-        not File.exists?(Path.expand("../checksum-Elixir.ExTholosPq.exs", __DIR__)),
-    version: version
+  alias ExTholosPq.Native
 
   @doc """
   Generates a new recipient keypair for post-quantum encryption.
@@ -82,7 +121,7 @@ defmodule ExTholosPq do
 
   """
   @spec gen_recipient_keypair(String.t()) :: {:ok, {String.t(), binary()}} | {:error, String.t()}
-  def gen_recipient_keypair(kid) when is_binary(kid), do: nif_gen_recipient_keypair(kid)
+  def gen_recipient_keypair(kid) when is_binary(kid), do: Native.gen_recipient_keypair(kid)
   def gen_recipient_keypair(_kid), do: {:error, "kid must be a binary"}
 
   @doc """
@@ -107,7 +146,7 @@ defmodule ExTholosPq do
 
   """
   @spec gen_sender_keypair(String.t()) :: {:ok, {String.t(), binary()}} | {:error, String.t()}
-  def gen_sender_keypair(sid) when is_binary(sid), do: nif_gen_sender_keypair(sid)
+  def gen_sender_keypair(sid) when is_binary(sid), do: Native.gen_sender_keypair(sid)
   def gen_sender_keypair(_sid), do: {:error, "sid must be a binary"}
 
   @doc """
@@ -140,7 +179,7 @@ defmodule ExTholosPq do
           {:ok, binary()} | {:error, String.t()}
   def encrypt(message, sender_id, recipient_pub_keys)
       when is_binary(message) and is_binary(sender_id) and is_list(recipient_pub_keys) do
-    nif_encrypt(message, sender_id, recipient_pub_keys)
+    Native.encrypt(message, sender_id, recipient_pub_keys)
   end
 
   def encrypt(_message, _sender_id, _recipient_pub_keys),
@@ -174,7 +213,7 @@ defmodule ExTholosPq do
           {:ok, binary()} | {:error, String.t()}
   def decrypt(ciphertext, kid, allowed_sender_pub_keys)
       when is_binary(ciphertext) and is_binary(kid) and is_list(allowed_sender_pub_keys) do
-    nif_decrypt(ciphertext, kid, allowed_sender_pub_keys)
+    Native.decrypt(ciphertext, kid, allowed_sender_pub_keys)
   end
 
   def decrypt(_ciphertext, _kid, _allowed_sender_pub_keys),
@@ -186,7 +225,7 @@ defmodule ExTholosPq do
   Used for interoperability checks against pure Rust `tholos-pq`.
   """
   @spec export_recipient_secret(String.t()) :: {:ok, binary()} | {:error, String.t()}
-  def export_recipient_secret(kid) when is_binary(kid), do: nif_export_recipient_secret(kid)
+  def export_recipient_secret(kid) when is_binary(kid), do: Native.export_recipient_secret(kid)
   def export_recipient_secret(_kid), do: {:error, "kid must be a binary"}
 
   @doc """
@@ -196,7 +235,7 @@ defmodule ExTholosPq do
           {:ok, {String.t(), binary()}} | {:error, String.t()}
   def import_recipient_keypair(kid, pub_cbor, sk_bytes)
       when is_binary(kid) and is_binary(pub_cbor) and is_binary(sk_bytes) do
-    nif_import_recipient_keypair(kid, pub_cbor, sk_bytes)
+    Native.import_recipient_keypair(kid, pub_cbor, sk_bytes)
   end
 
   def import_recipient_keypair(_kid, _pub_cbor, _sk_bytes),
@@ -209,30 +248,9 @@ defmodule ExTholosPq do
           {:ok, {String.t(), binary()}} | {:error, String.t()}
   def import_sender_keypair(sid, pk_bytes, sk_bytes)
       when is_binary(sid) and is_binary(pk_bytes) and is_binary(sk_bytes) do
-    nif_import_sender_keypair(sid, pk_bytes, sk_bytes)
+    Native.import_sender_keypair(sid, pk_bytes, sk_bytes)
   end
 
   def import_sender_keypair(_sid, _pk_bytes, _sk_bytes),
     do: {:error, "invalid arguments: expected binary sid, pk_bytes, and sk_bytes"}
-
-  # NIF stubs — overwritten at load time by Rustler.
-  # coveralls-ignore-start
-  defp nif_gen_recipient_keypair(_kid), do: :erlang.nif_error(:nif_not_loaded)
-  defp nif_gen_sender_keypair(_sid), do: :erlang.nif_error(:nif_not_loaded)
-
-  defp nif_encrypt(_message, _sender_id, _recipient_pub_keys),
-    do: :erlang.nif_error(:nif_not_loaded)
-
-  defp nif_decrypt(_ciphertext, _kid, _allowed_sender_pub_keys),
-    do: :erlang.nif_error(:nif_not_loaded)
-
-  defp nif_export_recipient_secret(_kid), do: :erlang.nif_error(:nif_not_loaded)
-
-  defp nif_import_recipient_keypair(_kid, _pub_cbor, _sk_bytes),
-    do: :erlang.nif_error(:nif_not_loaded)
-
-  defp nif_import_sender_keypair(_sid, _pk_bytes, _sk_bytes),
-    do: :erlang.nif_error(:nif_not_loaded)
-
-  # coveralls-ignore-stop
 end

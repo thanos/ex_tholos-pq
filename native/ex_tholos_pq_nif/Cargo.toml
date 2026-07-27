@@ -14,8 +14,19 @@ crate-type = ["cdylib"]
 name = "tholos_pq_ref"
 path = "src/bin/tholos_pq_ref.rs"
 
+# Required for rustler_precompiled / philss/rustler-precompiled-action: each matrix
+# NIF version must map to rustler's feature flags. See:
+# https://hexdocs.pm/rustler_precompiled/precompilation_guide.html#additional-configuration-before-build
+[features]
+# Default must be the *lowest* NIF you ship; the release matrix enables higher
+# versions with `--features nif_version_2_17`. If default were 2.17, 2.16
+# builds would still activate 2.17 and fail the rustler-precompiled check.
+default = ["nif_version_2_16"]
+nif_version_2_16 = ["rustler/nif_version_2_16"]
+nif_version_2_17 = ["rustler/nif_version_2_17"]
+
 [dependencies]
-rustler = "0.34.0"
+rustler = { version = "0.37", default-features = false, features = ["derive"] }
 tholos-pq = "0.1"
 serde = { version = "1", features = ["derive"] }
 serde_cbor = "0.11"

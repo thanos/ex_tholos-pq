@@ -1,14 +1,14 @@
 defmodule ExTholosPq.MixProject do
   use Mix.Project
 
-  @version "0.1.0"
+  @version "0.2.0"
   @source_url "https://github.com/thanos/ex_tholos-pq"
 
   def project do
     [
       app: :ex_tholos_pq,
       version: @version,
-      elixir: "~> 1.14",
+      elixir: "~> 1.18",
       start_permanent: Mix.env() == :prod,
       deps: deps(),
       description: description(),
@@ -27,9 +27,10 @@ defmodule ExTholosPq.MixProject do
       preferred_envs: [
         coveralls: :test,
         "coveralls.detail": :test,
-        "coveralls.post": :test,
         "coveralls.html": :test,
-        "coveralls.cobertura": :test
+        "coveralls.json": :test,
+        "coveralls.github": :test,
+        "coveralls.lcov": :test
       ]
     ]
   end
@@ -45,8 +46,9 @@ defmodule ExTholosPq.MixProject do
 
   defp deps do
     [
-      {:rustler_precompiled, "~> 0.9"},
-      {:rustler, "~> 0.37.1", optional: true, runtime: false},
+      {:rustler, "~> 0.37", optional: true, runtime: false},
+      {:rustler_precompiled, "~> 0.8"},
+      {:jason, "~> 1.4"},
       {:ex_doc, "~> 0.31", only: :dev, runtime: false},
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
       {:sobelow, "~> 0.14", only: [:dev, :test], runtime: false, warn_if_outdated: true},
@@ -65,15 +67,7 @@ defmodule ExTholosPq.MixProject do
   defp package do
     [
       name: "ex_tholos_pq",
-      files: ~w(
-        lib
-        native
-        checksum-*.exs
-        .formatter.exs
-        mix.exs
-        README.md
-        LICENSE
-      ),
+      files: package_files(),
       licenses: ["Apache-2.0"],
       links: %{
         "GitHub" => @source_url
@@ -82,12 +76,35 @@ defmodule ExTholosPq.MixProject do
     ]
   end
 
+  defp package_files do
+    native = [
+      "native/ex_tholos_pq_nif/src",
+      "native/ex_tholos_pq_nif/Cargo.toml",
+      "native/ex_tholos_pq_nif/Cargo.lock",
+      "native/ex_tholos_pq_nif/.cargo"
+    ]
+
+    base =
+      Enum.concat([
+        ~w(lib .formatter.exs mix.exs README.md LICENSE coveralls.json),
+        native
+      ])
+
+    checksum = "checksum-Elixir.ExTholosPq.Native.exs"
+
+    if File.exists?(checksum) do
+      base ++ [checksum]
+    else
+      base
+    end
+  end
+
   defp docs do
     [
       main: "ExTholosPq",
       extras: [
         "README.md",
-        "QUICKSTART.md",
+        "docs/QUICKSTART.md",
         "CHANGELOG.md"
       ],
       source_ref: "v#{@version}",
@@ -95,6 +112,9 @@ defmodule ExTholosPq.MixProject do
       groups_for_modules: [
         API: [
           ExTholosPq
+        ],
+        Internals: [
+          ExTholosPq.Native
         ]
       ],
       nest_modules_by_prefix: [ExTholosPq]

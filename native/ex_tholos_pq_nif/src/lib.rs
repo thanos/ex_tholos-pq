@@ -23,7 +23,8 @@ lazy_static::lazy_static! {
         Mutex::new(HashMap::new());
 }
 
-rustler::init!("Elixir.ExTholosPq");
+// Initialize the NIF module (must match `ExTholosPq.Native` in Elixir)
+rustler::init!("Elixir.ExTholosPq.Native");
 
 fn owned_bin<'a>(env: Env<'a>, bytes: &[u8]) -> NifResult<Binary<'a>> {
     let mut bin = OwnedBinary::new(bytes.len()).ok_or(Error::Atom("allocation_failed"))?;
@@ -38,7 +39,7 @@ fn decapsulation_key_from_bytes(sk_bytes: &[u8]) -> NifResult<DecapsulationKey> 
     Ok(DecapsulationKey::from_bytes(&encoded))
 }
 
-#[rustler::nif(name = "nif_gen_recipient_keypair")]
+#[rustler::nif]
 fn gen_recipient_keypair<'a>(
     env: Env<'a>,
     kid: String,
@@ -56,7 +57,7 @@ fn gen_recipient_keypair<'a>(
     Ok((atoms::ok(), (kid, owned_bin(env, &pub_bytes)?)))
 }
 
-#[rustler::nif(name = "nif_gen_sender_keypair")]
+#[rustler::nif]
 fn gen_sender_keypair<'a>(
     env: Env<'a>,
     sid: String,
@@ -72,11 +73,8 @@ fn gen_sender_keypair<'a>(
     Ok((atoms::ok(), (sid, owned_bin(env, &pub_bytes)?)))
 }
 
-#[rustler::nif(name = "nif_export_recipient_secret")]
-fn export_recipient_secret<'a>(
-    env: Env<'a>,
-    kid: String,
-) -> NifResult<(rustler::Atom, Binary<'a>)> {
+#[rustler::nif]
+fn export_recipient_secret<'a>(env: Env<'a>, kid: String) -> NifResult<(rustler::Atom, Binary<'a>)> {
     let recipient_keys = RECIPIENT_KEYS.lock().unwrap();
     let (_, priv_key) = recipient_keys
         .get(&kid)
@@ -86,20 +84,19 @@ fn export_recipient_secret<'a>(
     Ok((atoms::ok(), owned_bin(env, &sk_bytes)?))
 }
 
-#[rustler::nif(name = "nif_import_recipient_keypair")]
+#[rustler::nif]
 fn import_recipient_keypair<'a>(
     env: Env<'a>,
     kid: String,
     pub_cbor: Binary,
     sk_bytes: Binary,
 ) -> NifResult<(rustler::Atom, (String, Binary<'a>))> {
-    let pub_key: tholos_pq::RecipientPub =
-        serde_cbor::from_slice(pub_cbor.as_slice()).map_err(|e| {
-            Error::Term(Box::new(format!(
-                "Failed to deserialize recipient pub: {:?}",
-                e
-            )))
-        })?;
+    let pub_key: tholos_pq::RecipientPub = serde_cbor::from_slice(pub_cbor.as_slice()).map_err(|e| {
+        Error::Term(Box::new(format!(
+            "Failed to deserialize recipient pub: {:?}",
+            e
+        )))
+    })?;
 
     if pub_key.kid != kid {
         return Err(Error::Term(Box::new(format!(
@@ -122,7 +119,7 @@ fn import_recipient_keypair<'a>(
     Ok((atoms::ok(), (kid, owned_bin(env, pub_cbor.as_slice())?)))
 }
 
-#[rustler::nif(name = "nif_import_sender_keypair")]
+#[rustler::nif]
 fn import_sender_keypair<'a>(
     env: Env<'a>,
     sid: String,
@@ -148,7 +145,7 @@ fn import_sender_keypair<'a>(
     Ok((atoms::ok(), (sid, owned_bin(env, &pub_cbor)?)))
 }
 
-#[rustler::nif(name = "nif_encrypt")]
+#[rustler::nif]
 fn encrypt<'a>(
     env: Env<'a>,
     message: Binary,
@@ -177,7 +174,7 @@ fn encrypt<'a>(
     Ok((atoms::ok(), owned_bin(env, &wire)?))
 }
 
-#[rustler::nif(name = "nif_decrypt")]
+#[rustler::nif]
 fn decrypt<'a>(
     env: Env<'a>,
     wire: Binary,
