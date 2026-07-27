@@ -10,13 +10,22 @@ description = "Rustler NIF for tholos-pq post-quantum cryptography"
 name = "ex_tholos_pq_nif"
 crate-type = ["cdylib"]
 
+[[bin]]
+name = "tholos_pq_ref"
+path = "src/bin/tholos_pq_ref.rs"
+
 [dependencies]
 rustler = "0.34.0"
 tholos-pq = "0.1"
+serde = { version = "1", features = ["derive"] }
 serde_cbor = "0.11"
+serde_json = "1"
 lazy_static = "1.4"
+base64 = "0.22"
+ml-kem = "0.2"
+pqcrypto-dilithium = { version = "0.5", default-features = false }
+pqcrypto-traits = "0.3"
 
 [profile.release]
 lto = true
 opt-level = 3
-

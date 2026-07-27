@@ -49,9 +49,16 @@ defmodule ExTholosPq do
   ```
   """
 
-  use Rustler,
+  version = Mix.Project.config()[:version]
+
+  use RustlerPrecompiled,
     otp_app: :ex_tholos_pq,
-    crate: :ex_tholos_pq_nif
+    crate: "ex_tholos_pq_nif",
+    base_url: "https://github.com/thanos/ex_tholos-pq/releases/download/v#{version}",
+    force_build:
+      System.get_env("EX_THOLOS_PQ_BUILD") in ["1", "true"] or
+        not File.exists?(Path.expand("../checksum-Elixir.ExTholosPq.exs", __DIR__)),
+    version: version
 
   @doc """
   Generates a new recipient keypair for post-quantum encryption.
@@ -75,7 +82,8 @@ defmodule ExTholosPq do
 
   """
   @spec gen_recipient_keypair(String.t()) :: {:ok, {String.t(), binary()}} | {:error, String.t()}
-  def gen_recipient_keypair(_kid), do: :erlang.nif_error(:nif_not_loaded)
+  def gen_recipient_keypair(kid) when is_binary(kid), do: nif_gen_recipient_keypair(kid)
+  def gen_recipient_keypair(_kid), do: {:error, "kid must be a binary"}
 
   @doc """
   Generates a new sender keypair for signing encrypted messages.
@@ -99,7 +107,8 @@ defmodule ExTholosPq do
 
   """
   @spec gen_sender_keypair(String.t()) :: {:ok, {String.t(), binary()}} | {:error, String.t()}
-  def gen_sender_keypair(_sid), do: :erlang.nif_error(:nif_not_loaded)
+  def gen_sender_keypair(sid) when is_binary(sid), do: nif_gen_sender_keypair(sid)
+  def gen_sender_keypair(_sid), do: {:error, "sid must be a binary"}
 
   @doc """
   Encrypts a message for multiple recipients with sender authentication.
@@ -129,7 +138,13 @@ defmodule ExTholosPq do
   """
   @spec encrypt(binary(), String.t(), list(binary())) ::
           {:ok, binary()} | {:error, String.t()}
-  def encrypt(_message, _sender_id, _recipient_pub_keys), do: :erlang.nif_error(:nif_not_loaded)
+  def encrypt(message, sender_id, recipient_pub_keys)
+      when is_binary(message) and is_binary(sender_id) and is_list(recipient_pub_keys) do
+    nif_encrypt(message, sender_id, recipient_pub_keys)
+  end
+
+  def encrypt(_message, _sender_id, _recipient_pub_keys),
+    do: {:error, "invalid arguments: expected binary message, binary sender_id, and list of keys"}
 
   @doc """
   Decrypts a message for a specific recipient.
@@ -157,6 +172,67 @@ defmodule ExTholosPq do
   """
   @spec decrypt(binary(), String.t(), list(binary())) ::
           {:ok, binary()} | {:error, String.t()}
+  def decrypt(ciphertext, kid, allowed_sender_pub_keys)
+      when is_binary(ciphertext) and is_binary(kid) and is_list(allowed_sender_pub_keys) do
+    nif_decrypt(ciphertext, kid, allowed_sender_pub_keys)
+  end
+
   def decrypt(_ciphertext, _kid, _allowed_sender_pub_keys),
+    do: {:error, "invalid arguments: expected binary ciphertext, binary kid, and list of keys"}
+
+  @doc """
+  Exports the recipient ML-KEM secret key bytes for a previously generated kid.
+
+  Used for interoperability checks against pure Rust `tholos-pq`.
+  """
+  @spec export_recipient_secret(String.t()) :: {:ok, binary()} | {:error, String.t()}
+  def export_recipient_secret(kid) when is_binary(kid), do: nif_export_recipient_secret(kid)
+  def export_recipient_secret(_kid), do: {:error, "kid must be a binary"}
+
+  @doc """
+  Imports a recipient keypair (CBOR public key + raw ML-KEM secret) into the NIF store.
+  """
+  @spec import_recipient_keypair(String.t(), binary(), binary()) ::
+          {:ok, {String.t(), binary()}} | {:error, String.t()}
+  def import_recipient_keypair(kid, pub_cbor, sk_bytes)
+      when is_binary(kid) and is_binary(pub_cbor) and is_binary(sk_bytes) do
+    nif_import_recipient_keypair(kid, pub_cbor, sk_bytes)
+  end
+
+  def import_recipient_keypair(_kid, _pub_cbor, _sk_bytes),
+    do: {:error, "invalid arguments: expected binary kid, pub_cbor, and sk_bytes"}
+
+  @doc """
+  Imports a sender keypair (Dilithium public + secret key bytes) into the NIF store.
+  """
+  @spec import_sender_keypair(String.t(), binary(), binary()) ::
+          {:ok, {String.t(), binary()}} | {:error, String.t()}
+  def import_sender_keypair(sid, pk_bytes, sk_bytes)
+      when is_binary(sid) and is_binary(pk_bytes) and is_binary(sk_bytes) do
+    nif_import_sender_keypair(sid, pk_bytes, sk_bytes)
+  end
+
+  def import_sender_keypair(_sid, _pk_bytes, _sk_bytes),
+    do: {:error, "invalid arguments: expected binary sid, pk_bytes, and sk_bytes"}
+
+  # NIF stubs — overwritten at load time by Rustler.
+  # coveralls-ignore-start
+  defp nif_gen_recipient_keypair(_kid), do: :erlang.nif_error(:nif_not_loaded)
+  defp nif_gen_sender_keypair(_sid), do: :erlang.nif_error(:nif_not_loaded)
+
+  defp nif_encrypt(_message, _sender_id, _recipient_pub_keys),
     do: :erlang.nif_error(:nif_not_loaded)
+
+  defp nif_decrypt(_ciphertext, _kid, _allowed_sender_pub_keys),
+    do: :erlang.nif_error(:nif_not_loaded)
+
+  defp nif_export_recipient_secret(_kid), do: :erlang.nif_error(:nif_not_loaded)
+
+  defp nif_import_recipient_keypair(_kid, _pub_cbor, _sk_bytes),
+    do: :erlang.nif_error(:nif_not_loaded)
+
+  defp nif_import_sender_keypair(_sid, _pk_bytes, _sk_bytes),
+    do: :erlang.nif_error(:nif_not_loaded)
+
+  # coveralls-ignore-stop
 end

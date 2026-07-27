@@ -16,7 +16,21 @@ defmodule ExTholosPq.MixProject do
       docs: docs(),
       name: "ExTholosPq",
       source_url: @source_url,
-      aliases: aliases()
+      aliases: aliases(),
+      test_coverage: [tool: ExCoveralls],
+      elixirc_paths: elixirc_paths(Mix.env())
+    ]
+  end
+
+  def cli do
+    [
+      preferred_envs: [
+        coveralls: :test,
+        "coveralls.detail": :test,
+        "coveralls.post": :test,
+        "coveralls.html": :test,
+        "coveralls.cobertura": :test
+      ]
     ]
   end
 
@@ -26,9 +40,13 @@ defmodule ExTholosPq.MixProject do
     ]
   end
 
+  defp elixirc_paths(:test), do: ["lib", "test/support"]
+  defp elixirc_paths(_), do: ["lib"]
+
   defp deps do
     [
-      {:rustler, "~> 0.37.1", runtime: false},
+      {:rustler_precompiled, "~> 0.9"},
+      {:rustler, "~> 0.37.1", optional: true, runtime: false},
       {:ex_doc, "~> 0.31", only: :dev, runtime: false},
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
       {:sobelow, "~> 0.14", only: [:dev, :test], runtime: false, warn_if_outdated: true},
@@ -47,7 +65,15 @@ defmodule ExTholosPq.MixProject do
   defp package do
     [
       name: "ex_tholos_pq",
-      files: ~w(lib native .formatter.exs mix.exs README.md LICENSE),
+      files: ~w(
+        lib
+        native
+        checksum-*.exs
+        .formatter.exs
+        mix.exs
+        README.md
+        LICENSE
+      ),
       licenses: ["Apache-2.0"],
       links: %{
         "GitHub" => @source_url

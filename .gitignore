@@ -33,3 +33,7 @@ Cargo.lock
 
 # OS specific
 .DS_Store
+/baoulo/
+.tool-versions
+.editorconfig
+/cover/
